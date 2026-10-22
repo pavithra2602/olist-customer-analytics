@@ -101,17 +101,17 @@ CREATE TABLE geolocation (
 -- CHANGE THIS PATH to where your CSVs are. Example: C:/Users/you/olist-customer-analytics/data/raw/
 -- (MySQL doesn't support variables in LOAD DATA paths, so find/replace the path below.)
 
-LOAD DATA LOCAL INFILE 'C:/PATH/TO/data/raw/olist_customers_dataset.csv'
+LOAD DATA LOCAL INFILE 'C:/Users/HP/Documents/DA Main Project/olist-customer-analytics/olist-customer-analytics/data/raw/olist_customers_dataset.csv'
 INTO TABLE customers
 FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
 LINES TERMINATED BY '\n' IGNORE 1 ROWS;
 
-LOAD DATA LOCAL INFILE 'C:/PATH/TO/data/raw/olist_sellers_dataset.csv'
+LOAD DATA LOCAL INFILE 'C:/Users/HP/Documents/DA Main Project/olist-customer-analytics/olist-customer-analytics/data/raw/olist_sellers_dataset.csv'
 INTO TABLE sellers
 FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
 LINES TERMINATED BY '\n' IGNORE 1 ROWS;
 
-LOAD DATA LOCAL INFILE 'C:/PATH/TO/data/raw/olist_products_dataset.csv'
+LOAD DATA LOCAL INFILE 'C:/Users/HP/Documents/DA Main Project/olist-customer-analytics/olist-customer-analytics/data/raw/olist_products_dataset.csv'
 INTO TABLE products
 FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
 LINES TERMINATED BY '\n' IGNORE 1 ROWS
@@ -124,12 +124,12 @@ SET product_name_lenght       = NULLIF(@a,''),
     product_height_cm         = NULLIF(@f,''),
     product_width_cm          = NULLIF(@g,'');
 
-LOAD DATA LOCAL INFILE 'C:/PATH/TO/data/raw/product_category_name_translation.csv'
+LOAD DATA LOCAL INFILE 'C:/Users/HP/Documents/DA Main Project/olist-customer-analytics/olist-customer-analytics/data/raw/product_category_name_translation.csv'
 INTO TABLE product_category_translation
 FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
 LINES TERMINATED BY '\n' IGNORE 1 ROWS;
 
-LOAD DATA LOCAL INFILE 'C:/PATH/TO/data/raw/olist_orders_dataset.csv'
+LOAD DATA LOCAL INFILE 'C:/Users/HP/Documents/DA Main Project/olist-customer-analytics/olist-customer-analytics/data/raw/olist_orders_dataset.csv'
 INTO TABLE orders
 FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
 LINES TERMINATED BY '\n' IGNORE 1 ROWS
@@ -140,17 +140,17 @@ SET order_purchase_timestamp      = NULLIF(@p,''),
     order_delivered_customer_date = NULLIF(@d,''),
     order_estimated_delivery_date = NULLIF(@e,'');
 
-LOAD DATA LOCAL INFILE 'C:/PATH/TO/data/raw/olist_order_items_dataset.csv'
+LOAD DATA LOCAL INFILE 'C:/Users/HP/Documents/DA Main Project/olist-customer-analytics/olist-customer-analytics/data/raw/olist_order_items_dataset.csv'
 INTO TABLE order_items
 FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
 LINES TERMINATED BY '\n' IGNORE 1 ROWS;
 
-LOAD DATA LOCAL INFILE 'C:/PATH/TO/data/raw/olist_order_payments_dataset.csv'
+LOAD DATA LOCAL INFILE 'C:/Users/HP/Documents/DA Main Project/olist-customer-analytics/olist-customer-analytics/data/raw/olist_order_payments_dataset.csv'
 INTO TABLE order_payments
 FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
 LINES TERMINATED BY '\n' IGNORE 1 ROWS;
 
-LOAD DATA LOCAL INFILE 'C:/PATH/TO/data/raw/olist_order_reviews_dataset.csv'
+LOAD DATA LOCAL INFILE 'C:/Users/HP/Documents/DA Main Project/olist-customer-analytics/olist-customer-analytics/data/raw/olist_order_reviews_dataset.csv'
 INTO TABLE order_reviews
 FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
 LINES TERMINATED BY '\n' IGNORE 1 ROWS
@@ -160,7 +160,7 @@ SET review_comment_title    = NULLIF(@t,''),
     review_creation_date    = NULLIF(@c,''),
     review_answer_timestamp = NULLIF(@a,'');
 
-LOAD DATA LOCAL INFILE 'C:/PATH/TO/data/raw/olist_geolocation_dataset.csv'
+LOAD DATA LOCAL INFILE 'C:/Users/HP/Documents/DA Main Project/olist-customer-analytics/olist-customer-analytics/data/raw/olist_geolocation_dataset.csv'
 INTO TABLE geolocation
 FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
 LINES TERMINATED BY '\n' IGNORE 1 ROWS;
