@@ -101,6 +101,6 @@ olist-customer-analytics/
 
 ## 11. Author
 
-**[Your Name]** | [LinkedIn] | [GitHub] | [Email]
+**[Pavithra Menon M]** | [LinkedIn] | [GitHub] | [Email]
 
 *Dataset credit: Olist and André Sionek, via Kaggle.*
