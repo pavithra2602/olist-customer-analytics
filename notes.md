@@ -18,7 +18,7 @@
 |4. Python cleaning and EDA|Done|
 |5. RFM segmentation|Done|
 |6. Cohort retention|Done|
-|7. Hypothesis testing|Not started|
+|7. Hypothesis testing|Done|
 |8. Power BI dashboard|Not started|
 |9. Tableau dashboard|Not started|
 |10. Report, PPT, final README|Not started|
@@ -230,7 +230,7 @@ Files: `sql/03_analysis.sql` (queries and results summary) and `sql/04_views.sql
 * 2017-01 had 750 orders (111,798.36). Feb 2017 grew +109.51% and Mar 2017 +53.36%. This reflects the marketplace ramping up, not steady growth.
 * Nov 2017 had 7,289 orders and 987,765.37 revenue (+52.37%), the highest month in the first 11 months of the window.
 * Average order value from Jan to Nov 2017 stays between about 124 and 149.
-* 2018 months and the highest revenue month overall: **[RUN: check the rest of the monthly query]**
+* After Nov 2017, monthly revenue stays roughly between 0.83M and 0.98M through Aug 2018, so Nov 2017 is the highest revenue month in the window.
 
 #### Products
 
@@ -548,6 +548,57 @@ Files: `notebooks/03_cohort_retention.ipynb`, `reports/figures/14_cohort_retenti
 
 ---
 
+## Phase 7: Hypothesis testing
+
+Files: `notebooks/04_hypothesis_testing.ipynb`, `reports/figures/16_review_distribution_late.png`.
+
+### Setup and reconciliation
+
+Loaded `vw_orders_master` (96,211 rows). Orders with a review score and a delivery flag: 95,559 (87,901 on time, 7,658 late), matching Chart 8.
+
+### Design decisions
+
+* **Test:** Mann-Whitney U, because review scores are ordinal (1 to 5) and heavily skewed (59% are 5 stars). A Welch t-test is reported as a cross-check.
+* **Hypotheses:** H0 = same score distribution for late and on-time orders; H1 = the distributions differ (two-sided, alpha 0.05).
+* **Effect sizes and intervals** are reported because with about 95,000 reviews the p-value alone is uninformative.
+* Three tests: late vs on-time scores; share of 1 to 2 star reviews; scores by delivery-time bucket.
+
+### Results
+
+|Test|Result|Effect|
+|-|-|-|
+|Late vs on-time score (Mann-Whitney U)|p < 0.001|rank-biserial -0.554|
+|Late vs on-time score (Welch t)|p < 0.001|diff -1.73 stars [-1.77, -1.69], d -1.45|
+|Share of 1-2 star reviews (two-proportion z)|p < 0.001|54.1% vs 9.2%, diff 44.9 pts [43.7, 46.0]|
+|Score across delivery buckets (Kruskal-Wallis)|p < 0.001|epsilon-squared 0.080|
+
+|Delivery time|Orders|Mean score|
+|-|-|-|
+|0-7 days|30,516|4.41|
+|8-14 days|37,695|4.30|
+|15-21 days|15,994|4.12|
+|22+ days|11,354|3.05|
+
+### Key insights
+
+* Late orders score about 1.73 stars lower (95% CI 1.69 to 1.77), a large effect.
+* 54.1% of late orders get 1 to 2 stars against 9.2% of on-time orders; 46.2% of late orders get exactly 1 star.
+* Orders taking 22+ days score 3.05 against 4.31 for 21 days or less.
+* Late delivery is rare (8.13% of orders) but strongly linked to dissatisfaction.
+
+### Limitations
+
+* Association, not proof of cause: region, category and seller may also affect both lateness and scores.
+* Only orders with a review are included (644 have none), and reviewers may differ from non-reviewers.
+* The tests are not independent, because long deliveries are more likely to be late.
+* With a large sample, effect size matters more than the p-value.
+
+### Outputs
+
+* `data/processed/hypothesis_results.csv` (not tracked by Git).
+
+---
+
 ## Decisions log
 
 |Date|Decision|Reason|
@@ -569,7 +620,9 @@ Files: `notebooks/03_cohort_retention.ipynb`, `reports/figures/14_cohort_retenti
 | 2 Nov | Cohort = calendar month of the first delivered order in the window | Simple, standard definition, and it fits monthly reporting |
 | 2 Nov | Month index counts calendar months, not 30-day periods | Matches the monthly cohorts and keeps the heatmap aligned |
 | 2 Nov | Retention is per-month (not cumulative) | Shows when customers return; cumulative would double-count |
-
+|2 Nov|Mann-Whitney U instead of a t-test for review scores|Scores are ordinal and skewed (59% are 5 stars)|
+|2 Nov|Report effect size and confidence interval with every test|With about 95,000 reviews, p-values are tiny and say little alone|
+|2 Nov|Treat the results as association, not cause|Region, category and seller were not controlled for|
 
 ## Problems and fixes
 
@@ -584,4 +637,3 @@ Files: `notebooks/03_cohort_retention.ipynb`, `reports/figures/14_cohort_retenti
 
 - Fill in the remaining [RUN] items in Phase 2 (Q1 to Q4 and the orders-without-items check)
 - Write reports/data_dictionary.md
-- Phase 7: test whether the late versus on-time review gap, and the drop in scores after 21 days, are statistically significant
