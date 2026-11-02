@@ -17,7 +17,7 @@
 |3. SQL analysis and views|Done|
 |4. Python cleaning and EDA|Done|
 |5. RFM segmentation|Done|
-|6. Cohort retention|Not started|
+|6. Cohort retention|Done|
 |7. Hypothesis testing|Not started|
 |8. Power BI dashboard|Not started|
 |9. Tableau dashboard|Not started|
@@ -472,6 +472,82 @@ Checks: repeat segments total 2,789 (matches SQL); one-time segments total 90,31
 
 ---
 
+## Phase 6: Cohort retention
+
+Files: `notebooks/03_cohort_retention.ipynb`, `reports/figures/14_cohort_retention.png`, `reports/figures/15_retention_curve.png`, and `data/processed/cohort_retention.csv` and `cohort_avg_retention.csv` (not tracked by Git).
+
+### Design decisions
+
+- **Cohort:** the calendar month of a customer's first delivered order inside the Jan 2017 to Aug 2018 window.
+- **Month index:** counts calendar months, so an order on 31 Jan and another on 1 Feb are one month apart. Month 0 is the same calendar month as the first order.
+- **Retention in month n:** the share of the cohort with at least one order in that month. It is not cumulative, so the monthly percentages cannot be added up (the same customer can return in several months).
+- **Triangle shape:** later cohorts have fewer months to observe, and the 2018-08 cohort has no observed months yet.
+- **Average curve:** weights each cohort by its size and uses only cohorts that have reached that month, so the set of cohorts changes from month to month.
+- **Scope:** only delivered orders are counted. Customers whose true first order was before 2017 are treated as new, but the dataset has almost no earlier orders.
+
+### Reconciliation
+
+| Check | Result |
+|---|---|
+| Orders loaded | 96,211 |
+| Customers | 93,104 |
+| Cohorts | 20 (2017-01 to 2018-08) |
+| Cohort sizes add up to | 93,104 |
+| Ordered again in a later calendar month | 1,684 (1.81%) |
+| Second order within the first month only | 1,105 (1.19%) |
+| Total repeat customers | 2,789 (3.0%), matches SQL |
+
+### Cohort sizes
+
+| Cohort | Customers | Cohort | Customers |
+|---|---|---|---|
+| 2017-01 | 718 | 2017-11 | 7,061 |
+| 2017-02 | 1,628 | 2017-12 | 5,338 |
+| 2017-03 | 2,503 | 2018-01 | 6,843 |
+| 2017-04 | 2,257 | 2018-02 | 6,288 |
+| 2017-05 | 3,451 | 2018-03 | 6,775 |
+| 2017-06 | 3,037 | 2018-04 | 6,582 |
+| 2017-07 | 3,753 | 2018-05 | 6,508 |
+| 2017-08 | 4,057 | 2018-06 | 5,879 |
+| 2017-09 | 4,005 | 2018-07 | 5,949 |
+| 2017-10 | 4,328 | 2018-08 | 6,144 |
+
+### Average retention by month since first order
+
+| Month | Cohorts observed | Customers active | Base | Retention % |
+|---|---|---|---|---|
+| 1 | 19 | 420 | 86,960 | 0.48 |
+| 2 | 18 | 273 | 81,011 | 0.34 |
+| 3 | 17 | 192 | 75,132 | 0.26 |
+| 4 | 16 | 176 | 68,624 | 0.26 |
+| 5 | 15 | 140 | 62,042 | 0.23 |
+| 6 | 14 | 128 | 55,267 | 0.23 |
+| 7 | 13 | 102 | 48,979 | 0.21 |
+| 8 | 12 | 86 | 42,136 | 0.20 |
+| 9 | 11 | 60 | 36,798 | 0.16 |
+| 10 | 10 | 75 | 29,737 | 0.25 |
+| 11 | 9 | 56 | 25,409 | 0.22 |
+| 12 | 8 | 36 | 21,404 | 0.17 |
+
+### Key insights
+
+- Retention is very low in every cohort and every month. No heatmap cell exceeds 0.72%, and on average only 0.48% of a cohort orders in the month after its first order, falling to about 0.2% by months 5 to 8 and 0.17% by month 12.
+- Most of the decline happens in the first three months (0.48%, 0.34%, 0.26%). After that the curve is nearly flat at about 0.16 to 0.26%, a small steady trickle of returning customers, not a recovery. The bump at month 10 is 75 customers, so it is noise.
+- More customers reorder in the same calendar month as their first order (1,105, or 1.19%) than in the following month (0.48%), so where repeat buying happens it is mostly immediate. Together with the 1,684 who ordered in a later month, these are the 2,789 repeat customers (3.0%) found in the SQL analysis.
+- First-month retention is highest for the Aug to Oct 2017 cohorts (0.69%, 0.70%, 0.72%) and lowest for Feb 2017 (0.18%) and Dec 2017 (0.21%). The Nov 2017 cohort, the largest at 7,061 customers, retained 0.57%.
+- Overall, almost no customers return in any month, so growth depends on acquiring new customers rather than retaining existing ones.
+
+### Limitations
+
+- Early cohorts are small (Jan 2017 has 718 customers), so a single customer moves a cell by about 0.14 points and individual cells should not be over-interpreted.
+- The average curve mixes different cohorts (19 cohorts at month 1, only 8 at month 12).
+- The heatmap colour scale ends at about 0.7%, so even the darkest cell is under 1%.
+- Customers who bought late in the window had little time to return.
+- Retention counts orders on this marketplace only, and it cannot show whether customers returned through another channel.
+
+
+---
+
 ## Decisions log
 
 |Date|Decision|Reason|
@@ -487,10 +563,13 @@ Checks: repeat segments total 2,789 (matches SQL); one-time segments total 90,31
 |29 Oct|Reference revenue = 13,181,027.13|Every view and query reconciles to it|
 |1 Nov|Keep long deliveries (up to 210 days) in the data|They are real orders, and many are the late orders being studied; use the median alongside the mean|
 |1 Nov|Leave the 644 missing review scores as missing|Filling with 0 or the mean would distort the review analysis|
-|1 Nov|Show late % only for states with 100+ orders in Chart 7|Avoids small states topping the list on a handful of orders|
 |2 Nov|Snapshot date 2018-08-30 for RFM|The day after the last order in the window|
 |2 Nov|Frequency scored with fixed rules (1, 2, 3+), not quintiles|97% of customers ordered once, so quintiles fail|
 |2 Nov|Split one-time buyers by recency and spend|Those are the only measures that vary among them|
+| 2 Nov | Cohort = calendar month of the first delivered order in the window | Simple, standard definition, and it fits monthly reporting |
+| 2 Nov | Month index counts calendar months, not 30-day periods | Matches the monthly cohorts and keeps the heatmap aligned |
+| 2 Nov | Retention is per-month (not cumulative) | Shows when customers return; cumulative would double-count |
+
 
 ## Problems and fixes
 
@@ -503,4 +582,6 @@ Checks: repeat segments total 2,789 (matches SQL); one-time segments total 90,31
 
 ## Ideas / to-do
 
-* Write `reports/data_dictionary.md`
+- Fill in the remaining [RUN] items in Phase 2 (Q1 to Q4 and the orders-without-items check)
+- Write reports/data_dictionary.md
+- Phase 7: test whether the late versus on-time review gap, and the drop in scores after 21 days, are statistically significant
