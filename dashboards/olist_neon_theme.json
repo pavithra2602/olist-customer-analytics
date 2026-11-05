@@ -1,0 +1,23 @@
+{
+  "name": "Olist Neon Night",
+  "dataColors": ["#22D3EE", "#D946EF", "#8B5CF6", "#3B82F6", "#2DD4BF", "#F43F5E", "#F59E0B", "#94A3B8"],
+  "background": "#070B26",
+  "foreground": "#E5E7EB",
+  "tableAccent": "#22D3EE",
+  "good": "#2DD4BF",
+  "neutral": "#F59E0B",
+  "bad": "#F43F5E",
+  "textClasses": {
+    "callout": { "fontSize": 28, "fontFace": "Segoe UI Semibold", "color": "#FFFFFF" },
+    "title": { "fontSize": 14, "fontFace": "Segoe UI Semibold", "color": "#E5E7EB" },
+    "label": { "fontSize": 10, "fontFace": "Segoe UI", "color": "#94A3B8" }
+  },
+  "visualStyles": {
+    "*": {
+      "*": {
+        "background": [{ "show": true, "color": { "solid": { "color": "#0F1A4A" } }, "transparency": 35 }],
+        "border": [{ "show": true, "color": { "solid": { "color": "#2A3A8C" } }, "radius": 14 }]
+      }
+    }
+  }
+}

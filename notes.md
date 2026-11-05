@@ -2,7 +2,7 @@
 
 **Project:** E-Commerce Customer Retention & Delivery Performance Analytics
 **Dataset:** Olist Brazilian E-Commerce (Kaggle)
-**Tools:** MySQL, Python, Power BI, Tableau
+**Tools:** MySQL, Python, Power BI (Tableau planned as a later extension)
 
 > Items marked **[RUN: ...]** need a number from your own query. Replace them before treating the notes as final.
 
@@ -19,8 +19,8 @@
 |5. RFM segmentation|Done|
 |6. Cohort retention|Done|
 |7. Hypothesis testing|Done|
-|8. Power BI dashboard|Not started|
-|9. Tableau dashboard|Not started|
+|8. Power BI dashboard|Done|
+|9. Tableau dashboard|Planned for later (not started)|
 |10. Report, PPT, final README|Not started|
 
 ---
@@ -598,6 +598,49 @@ Loaded `vw_orders_master` (96,211 rows). Orders with a review score and a delive
 * `data/processed/hypothesis_results.csv` (not tracked by Git).
 
 ---
+## Phase 8: Power BI dashboard
+
+Files: `dashboards/olist_dashboard.pbix`, `dashboards/olist_neon_theme.json`, `dashboards/assets/` (background images and logo), `dashboards/screenshots/` (one image per page).
+
+### Data model
+
+* Connected to MySQL (`olist_db`) and loaded three tables only: `vw_orders_master` (renamed `Orders`), `vw_customer_summary` (`customers`) and `rfm_segments` (`rfm`). The joins and aggregations were already done in SQL, so the raw tables were not loaded. This avoids duplicated revenue.
+* Relationships: `customers` to `Orders` (one-to-many, single direction) and `rfm` to `customers` (one-to-one, single direction), both on `customer_unique_id`.
+* Calculated columns: `Month`, `Year`, `Delivery Status`, `Delivery Bucket` (sorted by `Bucket Order`), `Customer Type`.
+* Measures: `Total Revenue`, `Total Orders`, `Customer Count`, `Avg Order Value`, `Late %`, `Avg Delivery Days`, `Avg Review`, `Avg Spend`, `Repeat Customers`, `Repeat %`. Text versions of two counts show full numbers on cards.
+
+### Pages
+
+|Page|What it shows|
+|-|-|
+|Overview|Revenue, orders, customers and average order value; revenue by month; top 10 states; orders and order value; one-time vs repeat customers|
+|Delivery|Late %, average delivery days and average review; late % by state (states with 100+ orders); review score on time vs late; review score by delivery time|
+|Customers|Customer count, repeat customers and repeat %; customers and revenue by RFM segment; segment summary table; revenue share by segment|
+
+### Reconciliation with SQL and Python
+
+|Dashboard value|Result|Reference|
+|-|-|-|
+|Total revenue (segment table total)|13,181,027.13|13,181,027.13|
+|Customers|93,104|93,104|
+|Repeat customers|2,789|2,789|
+|Repeat %|3.00%|3.00%|
+|Late %|8.13%|8.13%|
+|Average delivery days|12.5|12.5|
+|Review score, on time / late|4.29 / 2.57|4.29 / 2.57|
+|Average spend by segment|55.52 to 267.47|matches Phase 5|
+
+### Design
+
+Dark navy theme with cyan, magenta and violet accents (`olist_neon_theme.json`), custom page backgrounds, a vertical navigator on the Overview page and a top navigation bar on the other two. Colour meaning is kept the same across pages: cyan for on time, red for late, and a fixed colour per RFM segment.
+
+### Limitations
+
+* The dashboard covers revenue, delivery, reviews, customers and RFM segments. Category, payment and seller analysis is in the SQL and Python phases (Charts 3 and 10).
+* Cohort retention (Phase 6) and the hypothesis tests (Phase 7) are in the notebooks, not the dashboard.
+* The data is imported, so the dashboard does not update unless it is refreshed from MySQL.
+* The Tableau version is planned for later.
+---
 
 ## Decisions log
 
@@ -623,6 +666,8 @@ Loaded `vw_orders_master` (96,211 rows). Orders with a review score and a delive
 |2 Nov|Mann-Whitney U instead of a t-test for review scores|Scores are ordinal and skewed (59% are 5 stars)|
 |2 Nov|Report effect size and confidence interval with every test|With about 95,000 reviews, p-values are tiny and say little alone|
 |2 Nov|Treat the results as association, not cause|Region, category and seller were not controlled for|
+|5 Nov|Load only three prepared tables into Power BI|SQL views already aggregate to the right grain; raw tables would risk duplicated revenue|
+|5 Nov|Postpone the Tableau dashboard|Power BI covers the dashboard deliverable; Tableau to be added later|
 
 ## Problems and fixes
 
@@ -636,4 +681,4 @@ Loaded `vw_orders_master` (96,211 rows). Orders with a review score and a delive
 ## Ideas / to-do
 
 - Fill in the remaining [RUN] items in Phase 2 (Q1 to Q4 and the orders-without-items check)
-- Write reports/data_dictionary.md
+- add Build the Tableau version of the dashboard (later).
