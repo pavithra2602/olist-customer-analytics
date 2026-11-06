@@ -1,106 +1,144 @@
 # E-Commerce Customer Retention & Delivery Performance Analytics
 
-**Tools:** MySQL, Python (Pandas, NumPy, Matplotlib, Seaborn, SciPy), Power BI, Tableau
-**Dataset:** [Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) (Kaggle, CC BY-NC-SA 4.0)
+An end-to-end analytics project on the Olist Brazilian e-commerce dataset: SQL for the data model and analysis, Python for cleaning, segmentation, retention and hypothesis testing, and a three-page Power BI dashboard.
+
+**Business questions**
+
+1. Is the marketplace growing through repeat customers or through new ones?
+2. How much does late delivery hurt customer satisfaction?
+3. Which customers carry the revenue?
+
+**Tools:** MySQL, Python (pandas, SQLAlchemy, matplotlib, seaborn, SciPy), Power BI. A Tableau version is planned as a later extension.
 
 ---
 
-## 1. Business Problem
+## Key findings
 
-Olist is a Brazilian marketplace connecting small sellers to customers. Order volume grew from 2016 to 2018, but growth alone does not mean a healthy business. This project investigates:
+Analysis window: January 2017 to August 2018, delivered orders only. Revenue is item price without freight.
 
-1. How is revenue trending, and which categories and regions drive it?
-2. How many customers come back after their first order, and who are the most valuable customers?
-3. Does late delivery hurt customer satisfaction?
-4. What should the business do to improve retention and delivery performance?
+|Measure|Value|
+|-|-|
+|Revenue|13,181,027.13|
+|Delivered orders|96,211|
+|Customers|93,104|
+|Average order value|137.00|
 
-## 2. Objectives
+1. **Growth came from new customers, not repeat buyers.** 97% of customers (90,315 of 93,104) ordered only once. The 2,789 repeat customers (3.0%) hold 5.5% of revenue. On average only 0.48% of a monthly cohort orders again in the following month.
+2. **Late delivery is linked to much lower satisfaction.** 8.13% of orders are late. Late orders average 2.57 stars against 4.29 for on-time orders, and 54.1% of late orders get 1 or 2 stars against 9.2% of on-time orders (Mann-Whitney U, p < 0.001, rank-biserial correlation -0.55). Scores fall to 3.05 for orders that take 22 days or more.
+3. **A few customers carry the revenue.** High-spending one-time buyers are 37.7% of customers and hold 71.3% of revenue.
+4. **Delivery performance is uneven.** The highest late rates are in AL (24.0%), MA (19.6%) and PI (16.0%). RJ matters most by volume, with 13.5% late across 12,310 orders. SP, RJ and MG together are 63.4% of revenue.
 
-- Build a clean analytical view from 9 relational tables using SQL
-- Measure core KPIs: Revenue, Orders, AOV, Repeat Customer Rate, On-Time Delivery %, Average Review Score
-- Segment customers using RFM analysis
-- Measure retention using cohort analysis
-- Test statistically whether late deliveries lower review scores
-- Present findings in Power BI and Tableau dashboards with actionable recommendations
+The late-delivery result is an association. Region, category and seller were not controlled for, so it does not prove cause.
 
-## 3. Dataset Overview
+**What the numbers suggest**
 
-| Table | Description |
-|---|---|
-| olist_orders_dataset | Order status and timestamps |
-| olist_order_items_dataset | Items per order, price, freight, seller |
-| olist_order_payments_dataset | Payment type and value |
-| olist_order_reviews_dataset | Review score and comments |
-| olist_customers_dataset | Customer location and unique ID |
-| olist_products_dataset | Product category and dimensions |
-| olist_sellers_dataset | Seller location |
-| olist_geolocation_dataset | Zip code to lat/lng |
-| product_category_name_translation | Portuguese to English category names |
+* Delivery reliability looks like the clearest lever, especially in the worst states and for orders likely to take 22 days or more.
+* Because the data cannot show what would bring one-time buyers back, any retention idea (for example a follow-up for high-value first-time buyers) should be tested, not assumed.
+* Repeat rate and the share of orders taking 22 days or more are sensible KPIs to track.
 
-**Note:** `customer_id` is unique per order. Use `customer_unique_id` to identify a real customer across orders.
+---
 
-## 4. Project Structure
+## Dashboard
+
+The Power BI report has three pages, and every headline number reconciles to the SQL and Python results.
+
+**Overview**
+
+![Overview page](dashboards/screenshots/page1_overview.png)
+
+**Delivery**
+
+![Delivery page](dashboards/screenshots/page2_delivery.png)
+
+**Customers**
+
+![Customers page](dashboards/screenshots/page3_customers.png)
+
+The report file is `dashboards/olist_dashboard.pbix`. It loads three prepared tables (`vw_orders_master`, `vw_customer_summary`, `rfm_segments`) so revenue is never duplicated by joins.
+
+---
+
+## Project phases
+
+|Phase|What was done|Where|
+|-|-|-|
+|1. Setup|Loaded 9 CSV files into MySQL and checked row counts|`sql/01_create_tables_and_load.sql`|
+|2. Understand the data|Table grain, keys, missing values, duplicates, data dictionary|`sql/02_data_exploration.sql`, `reports/data_dictionary.md`|
+|3. SQL analysis|Revenue, products, sellers, states, delivery, payments, plus three reconciled views|`sql/03_analysis.sql`, `sql/04_views.sql`|
+|4. Cleaning and EDA|Checks against SQL, missing values, 11 charts, hidden-character fix|`notebooks/01_cleaning_eda.ipynb`, `sql/05_data_fixes.sql`|
+|5. RFM segmentation|Six customer segments with quintile and fixed-rule scoring|`notebooks/02_rfm_segmentation.ipynb`|
+|6. Cohort retention|Monthly cohorts, retention heatmap and average curve|`notebooks/03_cohort_retention.ipynb`|
+|7. Hypothesis testing|Mann-Whitney U, effect sizes and confidence intervals|`notebooks/04_hypothesis_testing.ipynb`|
+|8. Power BI dashboard|Three-page dashboard with a custom theme|`dashboards/`|
+|9. Tableau dashboard|Planned for later|-|
+|10. Documentation|Notes, data dictionary and this README|`notes.md`, `reports/`|
+
+Full detail, including every decision and the problems I hit, is in [`notes.md`](notes.md).
+
+---
+
+## Method highlights
+
+* **Customer identity:** `customer_unique_id`, because `customer_id` is generated per order (99,441 order-level IDs against 96,096 real customers).
+* **Avoiding duplicated revenue:** `order_items`, `order_payments` and `order_reviews` are each aggregated to one row per order before joining. Joining them all at once inflated item revenue by about 4.5% in my check.
+* **Analysis window:** January 2017 to August 2018, because the months outside it have too few orders and would create fake spikes and drops.
+* **RFM:** about 97% of customers ordered once, so frequency uses fixed rules (1, 2, 3 or more) instead of quintiles, and one-time buyers are split by recency and spend.
+* **Testing:** review scores are ordinal and skewed, so a rank-based test is used, with effect sizes and confidence intervals because the sample is large.
+* **Reconciliation:** every view, notebook and dashboard total is checked against 13,181,027.13 revenue, 96,211 orders and 93,104 customers.
+
+---
+
+## Repository structure
 
 ```
 olist-customer-analytics/
-├── data/raw/          # original CSVs (not pushed to GitHub if large)
-├── data/processed/    # cleaned files exported from Python/SQL
-├── sql/               # all SQL scripts
-├── notebooks/         # Jupyter notebooks
-├── dashboards/        # .pbix, .twbx and screenshots
-├── reports/           # final report and presentation
-└── README.md
+  dashboards/
+    olist_dashboard.pbix
+    olist_neon_theme.json
+    assets/            background images and logo
+    screenshots/       one image per page
+  data/                raw and processed data (not tracked by Git)
+  notebooks/           01 cleaning and EDA, 02 RFM, 03 cohorts, 04 hypothesis tests
+  reports/
+    data_dictionary.md
+    figures/           saved charts
+  sql/                 01 load, 02 exploration, 03 analysis, 04 views, 05 data fixes
+  notes.md             project notes, decisions and results
+  README.md
 ```
 
-## 5. Methodology
+---
 
-1. **SQL analysis:** database setup, joins, CTEs, window functions for KPIs and business questions
-2. **Data cleaning (Python):** missing values, data types, duplicates, master table creation
-3. **EDA:** trends, category performance, geography, payments
-4. **RFM segmentation:** Recency, Frequency, Monetary scoring
-5. **Cohort retention analysis:** monthly cohorts by first purchase
-6. **Hypothesis testing:** late vs. on-time delivery and review score
-7. **Dashboards:** Power BI (executive KPIs) and Tableau (customer segments)
+## How to run it
 
-## 6. Key Findings
+1. **Get the data.** Download the [Olist Brazilian E-Commerce dataset](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) from Kaggle and place the CSV files in `data/raw/` (the data is not included in this repository).
+2. **Build the database.** In MySQL Workbench, run `sql/01_create_tables_and_load.sql` after replacing the file path with your own, then run `02` to `05` in order. Check the row counts against `notes.md`.
+3. **Install the Python packages:**
+   ```
+   pip install pandas numpy matplotlib seaborn scipy sqlalchemy pymysql jupyter
+   ```
+4. **Run the notebooks in order** (`01` to `04`). Each one asks for your MySQL password in a hidden prompt, so no password is stored in the notebook. In notebooks `02` to `04`, change the `PROJECT` path in the first code cell to your own project folder.
+5. **Open the dashboard.** Open `dashboards/olist_dashboard.pbix` in Power BI Desktop. To refresh it, point the MySQL source at your own `olist_db`. The `rfm_segments` table is created by notebook `02`.
 
-> Fill these in with your own calculated numbers after the analysis. Do not publish placeholders.
+---
 
-- Total revenue: **[X]** across **[X]** delivered orders
-- Repeat customer rate: **[X]%** (most customers buy only once)
-- Late deliveries: **[X]%** of orders, with average review score **[X]** vs. **[Y]** for on-time orders (p-value: **[X]**)
-- Top categories by revenue: **[1, 2, 3]**
-- Top RFM segment: **[name]**, contributing **[X]%** of revenue
-- Month-1 cohort retention: **[X]%**
+## Limitations
 
-## 7. Recommendations
+* The dashboard covers revenue, delivery, reviews, customers and RFM segments. Category, payment and seller analysis is in the SQL and Python phases, and cohort retention and the hypothesis tests are in the notebooks.
+* "Lapsed" customers are those with no order in about six months or more inside a 20-month window, not confirmed churn.
+* Customers who bought late in the window had little time to return, so the repeat rate may be slightly understated.
+* The review findings use only orders that have a review (644 delivered orders have none).
+* The dashboard uses imported data, so it does not update unless it is refreshed.
 
-> Write after findings. Examples of the form they should take:
+---
 
-1. Improve delivery estimates in states with the highest delay rate: **[states]**
-2. Launch a post-purchase re-engagement campaign for first-time buyers within **[X]** days
-3. Prioritize retention offers for the **[segment]** RFM group
+## Data source
 
-## 8. Dashboards
+Olist, [Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce), Kaggle. Customer and seller IDs in the dataset are anonymised.
+Dataset credit: Olist and André Sionek, via Kaggle. Licence: CC BY-NC-SA 4.0 (non-commercial use with attribution).
 
-- Power BI: `dashboards/olist_powerbi.pbix` (screenshots in `dashboards/`)
-- Tableau: `dashboards/olist_tableau.twbx` (or Tableau Public link)
+## Author
 
-## 9. How to Run
-
-1. Download the dataset from Kaggle and place the CSVs in `data/raw/`
-2. Run `sql/01_create_tables_and_load.sql` in MySQL Workbench (edit the file path first)
-3. Run the remaining SQL scripts in order
-4. Open the notebooks in `notebooks/` in order (01 to 04)
-
-## 10. Limitations
-
-- Data covers 2016 to 2018 only; the dataset is anonymised and no longer updated
-- Customer identity relies on `customer_unique_id`; some customers may be missed
-- Observational data: findings show association, not proven causation
-
-## 11. Author
-
-**[Pavithra Menon M]** | [LinkedIn] | [GitHub] | [Email]
-
-*Dataset credit: Olist and André Sionek, via Kaggle.*
+**Pavithra Menon M**
+GitHub: [github.com/pavithra2602](https://github.com/pavithra2602)
+LinkedIn: [linkedin.com/in/pavithra-menon-0095402b4](https://www.linkedin.com/in/pavithra-menon-0095402b4)
