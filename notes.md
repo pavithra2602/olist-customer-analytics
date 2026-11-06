@@ -4,8 +4,6 @@
 **Dataset:** Olist Brazilian E-Commerce (Kaggle)
 **Tools:** MySQL, Python, Power BI (Tableau planned as a later extension)
 
-> Items marked **[RUN: ...]** need a number from your own query. Replace them before treating the notes as final.
-
 ---
 
 ## Progress
@@ -13,7 +11,7 @@
 |Phase|Status|
 |-|-|
 |1. Setup and load data|Done|
-|2. Understand the data|Done except the data dictionary and the [RUN] items below|
+|2. Understand the data|Done|
 |3. SQL analysis and views|Done|
 |4. Python cleaning and EDA|Done|
 |5. RFM segmentation|Done|
@@ -49,7 +47,7 @@
 * 2 categories have no English translation (`pc_gamer`, `portateis_cozinha_e_preparadores_de_alimentos`). They are handled with `COALESCE`.
 * 3 payments have type `not_defined` and value 0.00. They are excluded from payment-method analysis.
 * 383 order items have zero freight.
-* Orders without any items: **[RUN: count by order_status using the LEFT JOIN check]**
+* Orders without any items: 775 of 99,441 orders, all with a status other than delivered: unavailable 603, canceled 164, created 5, invoiced 2, shipped 1. Every delivered order has items, so the analysis is not affected.
 * The `product_category_translation` CSV has Windows line endings, so `product_category_name_english` carried a hidden `\r`. Found in the Chart 3 labels and fixed with an UPDATE (`sql/05_data_fixes.sql`).
 
 ---
@@ -108,7 +106,7 @@ SELECT COUNT(DISTINCT customer_id) AS customer_ids,
 FROM customers;
 ```
 
-* **Result:** customer_ids = 99,441; real_customers = **[RUN: your number]**
+* **Result:** customer_ids = 99,441; real_customers = 96,096
 * **Conclusion:** `customer_id` changes with every order, so the same person can appear under several IDs. To count real customers, repeat buyers and retention, I must use `customer_unique_id`.
 
 ### Q2: Rows per order in items, payments and reviews
@@ -116,11 +114,11 @@ FROM customers;
 * **Query:** grouped counts per `order_id` for each table (see `sql/02_data_exploration.sql`).
 * **Result:**
 
-  * Items per order: **[RUN: how many orders have 1, 2, 3+ items]**
-  * Payment rows per order: **[RUN: distribution]**
+  * Items per order: 88,863 orders have 1 item, 7,516 have 2 and 2,287 have 3 or more (maximum 21). In total 98,666 orders have at least one item.
+  * Payment rows per order: 96,479 orders have 1 payment row, 2,382 have 2 and 579 have 3 or more (maximum 29). The counts add up to 99,440, so one order has no payment record.
   * Reviews per order: mostly 1; 547 orders have more than one
 * **Why joining everything at once duplicates revenue:** if an order has 2 items and 2 payment rows, the join produces 2 x 2 = 4 rows for that order, so its price is counted 4 times instead of 2.
-* **Demonstration:** `SUM(price)` from `order_items` alone = **[RUN]**; after joining to `order_payments` = **[RUN: larger number]**.
+* **Demonstration:** `SUM(price)` from `order_items` alone = 13,591,643.70 (all statuses and months); after joining to `order_payments` = 14,209,115.34, which is 617,471.64 (about 4.5%) too high.
 * **How I avoid it:** aggregate each child table to one row per order (`GROUP BY order_id`) first, then join those results to `orders`.
 
 ### Q3: Order status
@@ -132,13 +130,13 @@ SELECT order_status, COUNT(*) AS orders
 FROM orders GROUP BY order_status ORDER BY orders DESC;
 ```
 
-* **Result:** **[RUN: each status and its count]**. The foundation check found 96,478 delivered orders with items.
+* **Result:** delivered 96,478; shipped 1,107; canceled 625; unavailable 609; invoiced 314; processing 301; created 5; approved 2 (total 99,441). The foundation check found 96,478 delivered orders with items.
 * **Statuses excluded and why:** everything except delivered, because they are not completed sales and have missing delivery dates.
 
 ### Q4: Date range and completeness
 
 * **Query:** MIN/MAX of `order_purchase_timestamp`, and orders per month using `DATE_FORMAT`.
-* **Result:** first order **[RUN]**, last order **[RUN]**. Dec 2016 has 1 order; Jan 2017 has 800; Sep 2018 has 16; Oct 2018 has 4. Orders before Dec 2016: **[RUN]**.
+* **Result:** first order 2016-09-04 21:15:19, last order 2018-10-17 17:30:18. Dec 2016 has 1 order; Jan 2017 has 800; Sep 2018 has 16; Oct 2018 has 4. Orders before 2017: 329 (all in late 2016).
 * **My analysis window and why:** Jan 2017 to Aug 2018, because the months outside it have too few orders (see Analysis rules).
 
 ### Q5: Missing values
@@ -468,7 +466,7 @@ Checks: repeat segments total 2,789 (matches SQL); one-time segments total 90,31
 ### Outputs
 
 * Table `rfm_segments` in `olist_db` (93,104 rows, for Power BI in Phase 8).
-* `data/processed/rfm_segments.csv` and `rfm_segment_summary.csv` (not tracked by Git, read locally by Tableau in Phase 9).
+* `data/processed/rfm_segments.csv` and `rfm_segment_summary.csv` (not tracked by Git, for use in Tableau later).
 
 ---
 
@@ -598,6 +596,7 @@ Loaded `vw_orders_master` (96,211 rows). Orders with a review score and a delive
 * `data/processed/hypothesis_results.csv` (not tracked by Git).
 
 ---
+
 ## Phase 8: Power BI dashboard
 
 Files: `dashboards/olist_dashboard.pbix`, `dashboards/olist_neon_theme.json`, `dashboards/assets/` (background images and logo), `dashboards/screenshots/` (one image per page).
@@ -640,6 +639,7 @@ Dark navy theme with cyan, magenta and violet accents (`olist_neon_theme.json`),
 * Cohort retention (Phase 6) and the hypothesis tests (Phase 7) are in the notebooks, not the dashboard.
 * The data is imported, so the dashboard does not update unless it is refreshed from MySQL.
 * The Tableau version is planned for later.
+
 ---
 
 ## Decisions log
@@ -680,5 +680,5 @@ Dark navy theme with cyan, magenta and violet accents (`olist_neon_theme.json`),
 
 ## Ideas / to-do
 
-- Fill in the remaining [RUN] items in Phase 2 (Q1 to Q4 and the orders-without-items check)
-- add Build the Tableau version of the dashboard (later).
+- Build the Tableau version of the dashboard (later)
+- Phase 10: final README, project report and presentation

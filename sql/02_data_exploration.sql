@@ -178,4 +178,46 @@ USE olist_db;
 --       GROUP BY order_id HAVING COUNT(DISTINCT payment_type) > 1) t;
 --       
 -- -- -------------------------------------------------------------------------------------- 
+-- ------------------------------------------------------------
+-- Results recorded in notes.md, Phase 2
+-- Q1 to Q4 and the orders-without-items check
+-- ------------------------------------------------------------
+USE olist_db;
 
+-- Q1: customer_id vs customer_unique_id
+SELECT COUNT(DISTINCT customer_id) AS customer_ids,
+       COUNT(DISTINCT customer_unique_id) AS real_customers
+FROM customers;
+
+-- Q2a: items per order
+SELECT items_per_order, COUNT(*) AS orders
+FROM (SELECT order_id, COUNT(*) AS items_per_order FROM order_items GROUP BY order_id) t
+GROUP BY items_per_order ORDER BY items_per_order;
+
+-- Q2b: payment rows per order
+SELECT payments_per_order, COUNT(*) AS orders
+FROM (SELECT order_id, COUNT(*) AS payments_per_order FROM order_payments GROUP BY order_id) t
+GROUP BY payments_per_order ORDER BY payments_per_order;
+
+-- Q2c: duplication demonstration (the inflated total is too high)
+SELECT
+  (SELECT ROUND(SUM(price), 2) FROM order_items) AS correct_item_total,
+  (SELECT ROUND(SUM(oi.price), 2)
+   FROM order_items oi JOIN order_payments p ON oi.order_id = p.order_id) AS inflated_total;
+
+-- Q3: order status
+SELECT order_status, COUNT(*) AS orders
+FROM orders GROUP BY order_status ORDER BY orders DESC;
+
+-- Q4: date range
+SELECT MIN(order_purchase_timestamp) AS first_order,
+       MAX(order_purchase_timestamp) AS last_order,
+       SUM(order_purchase_timestamp < '2017-01-01') AS orders_before_2017
+FROM orders;
+
+-- Orders without any items, by status
+SELECT o.order_status, COUNT(*) AS orders_without_items
+FROM orders o
+LEFT JOIN order_items oi ON o.order_id = oi.order_id
+WHERE oi.order_id IS NULL
+GROUP BY o.order_status;
